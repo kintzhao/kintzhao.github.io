@@ -1,0 +1,56 @@
+name: 部署知识库到 GitHub Pages
+
+on:
+  push:
+    branches:
+      - main          # 推送到 main 分支时自动触发
+  workflow_dispatch:  # 也支持手动触发
+
+# 设置 GitHub Pages 所需权限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时间只允许一次部署
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取代码（包含子模块）
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史，用于显示文章创建/修改时间
+
+      - name: 配置 Node.js 环境
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 构建站点
+        run: npx quartz build
+
+      - name: 上传构建产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 发布到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
