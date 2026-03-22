@@ -2,62 +2,63 @@ import { QuartzConfig } from "./quartz/cfg"
 import * as Plugin from "./quartz/plugins"
 
 /**
- * Quartz 4 Configuration
- *
- * See https://quartz.jzhao.xyz/configuration for more information.
+ * 个人知识管理网站 — Quartz v4 配置
+ * 修改 configuration 中的个人信息后即可使用
  */
 const config: QuartzConfig = {
   configuration: {
-    pageTitle: "Quartz 4",
+    // ========== 请修改以下个人信息 ==========
+    pageTitle: "📚 我的知识库",
     pageTitleSuffix: "",
     enableSPA: true,
-    enablePopovers: true,
+    enablePopovers: true,         // 鼠标悬停预览链接内容
     analytics: {
-      provider: "plausible",
+      provider: "plausible",      // 换成 "google" 并填 tagId 可用 GA
     },
-    locale: "en-US",
-    baseUrl: "quartz.jzhao.xyz",
+    locale: "zh-CN",
+    baseUrl: "kintzhao.github.io",  // ← 改成你的 GitHub 用户名
     ignorePatterns: ["private", "templates", ".obsidian"],
-    defaultDateType: "modified",
+    defaultDateType: "created",
     theme: {
       fontOrigin: "googleFonts",
       cdnCaching: true,
       typography: {
-        header: "Schibsted Grotesk",
-        body: "Source Sans Pro",
-        code: "IBM Plex Mono",
+        header: "Noto Serif SC",   // 标题字体
+        body: "Noto Sans SC",      // 正文字体
+        code: "JetBrains Mono",    // 代码字体
       },
       colors: {
         lightMode: {
-          light: "#faf8f8",
-          lightgray: "#e5e5e5",
-          gray: "#b8b8b8",
-          darkgray: "#4e4e4e",
-          dark: "#2b2b2b",
-          secondary: "#284b63",
-          tertiary: "#84a59d",
-          highlight: "rgba(143, 159, 169, 0.15)",
-          textHighlight: "#fff23688",
+          light: "#faf8f1",        // 页面背景（米白）
+          lightgray: "#e8e4d9",    // 边框色
+          gray: "#b8b0a0",         // 次要文字
+          darkgray: "#3d3530",     // 正文文字
+          dark: "#1a1512",         // 标题文字
+          secondary: "#5b7fa6",    // 链接/强调色（蓝灰）
+          tertiary: "#84a98c",     // 访问过的链接（绿）
+          highlight: "rgba(91,127,166,0.12)",
+          textHighlight: "#ffd58080",
         },
         darkMode: {
-          light: "#161618",
-          lightgray: "#393639",
-          gray: "#646464",
-          darkgray: "#d4d4d4",
-          dark: "#ebebec",
-          secondary: "#7b97aa",
-          tertiary: "#84a59d",
-          highlight: "rgba(143, 159, 169, 0.15)",
-          textHighlight: "#b3aa0288",
+          light: "#1c1917",        // 深色背景
+          lightgray: "#2a2520",
+          gray: "#6b635a",
+          darkgray: "#d4cfc8",
+          dark: "#f0ebe3",
+          secondary: "#7fa8cc",
+          tertiary: "#95b89e",
+          highlight: "rgba(127,168,204,0.12)",
+          textHighlight: "#b3aa0040",
         },
       },
     },
   },
+
   plugins: {
     transformers: [
       Plugin.FrontMatter(),
       Plugin.CreatedModifiedDate({
-        priority: ["frontmatter", "git", "filesystem"],
+        priority: ["frontmatter", "filesystem"],
       }),
       Plugin.SyntaxHighlighting({
         theme: {
@@ -68,12 +69,12 @@ const config: QuartzConfig = {
       }),
       Plugin.ObsidianFlavoredMarkdown({ enableInHtmlEmbed: false }),
       Plugin.GitHubFlavoredMarkdown(),
-      Plugin.TableOfContents(),
+      Plugin.TableOfContents(),           // 自动生成目录
       Plugin.CrawlLinks({ markdownLinkResolution: "shortest" }),
       Plugin.Description(),
-      Plugin.Latex({ renderEngine: "katex" }),
+      Plugin.Latex({ renderEngine: "katex" }), // 数学公式支持
     ],
-    filters: [Plugin.RemoveDrafts()],
+    filters: [Plugin.RemoveDrafts()],     // draft: true 的文章不发布
     emitters: [
       Plugin.AliasRedirects(),
       Plugin.ComponentResources(),
@@ -82,14 +83,11 @@ const config: QuartzConfig = {
       Plugin.TagPage(),
       Plugin.ContentIndex({
         enableSiteMap: true,
-        enableRSS: true,
+        enableRSS: true,                  // RSS 订阅
       }),
       Plugin.Assets(),
       Plugin.Static(),
-      Plugin.Favicon(),
       Plugin.NotFoundPage(),
-      // Comment out CustomOgImages to speed up build time
-      Plugin.CustomOgImages(),
     ],
   },
 }
