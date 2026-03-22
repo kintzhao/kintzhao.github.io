@@ -8,13 +8,14 @@ title: 欢迎来到我的知识库
 
 ## 🗂️ 内容分区
 
-| 分区 | 说明 |
-|------|------|
-| [[notes/index\|📝 技术笔记]] | 编程、工具、技术原理 |
-| [[reading/index\|📖 读书笔记]] | 书摘、感想、评分 |
-| [[projects/index\|🚀 项目记录]] | 做过的项目、复盘总结 |
-| [[daily/index\|💭 日常思考]] | 随想、日记、灵感片段 |
-| [[tools/index\|🔧 工具箱]] | 效率工具、配置、脚本 |
+|| 分区 | 说明 |
+||------|------|
+|| [[llm/index\|🤖 大模型技术]] | 模型压缩、知识蒸馏、DeepSeek |
+|| [[notes/index\|📝 技术笔记]] | 编程、工具、技术原理 |
+|| [[reading/index\|📖 读书笔记]] | 书摘、感想、评分 |
+|| [[projects/index\|🚀 项目记录]] | 做过的项目、复盘总结 |
+|| [[daily/index\|💭 日常思考]] | 随想、日记、灵感片段 |
+|| [[tools/index\|🔧 工具箱]] | 效率工具、配置、脚本 |
 
 ## 🔍 快速导航
 
@@ -24,9 +25,8 @@ title: 欢迎来到我的知识库
 
 ## 📌 最近更新
 
+- [[llm/index|🤖 大模型技术]] — 新增模型压缩与知识蒸馏、DeepSeek R1 蒸馏实战
 - [[notes/python-async|Python 异步编程笔记]]
-- [[reading/atomic-habits|原子习惯 — 读书笔记]]
-- [[projects/portfolio-site|个人网站重构记录]]
 
 ---
 
