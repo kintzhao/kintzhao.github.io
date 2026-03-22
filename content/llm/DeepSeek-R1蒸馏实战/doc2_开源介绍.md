@@ -1,9 +1,9 @@
 ---
-title: DeepSeek R1 开源情况介绍
+title: 第2章 DS R1开源情况介绍
 source: doc2_开源介绍.docx
 ---
 
-# 第2章：DeepSeek R1 开源情况介绍
+# 第2章 DS R1开源情况介绍
 
 本章全面介绍 DeepSeek R1 的开源背景、模型系列、许可证及社区生态。
 

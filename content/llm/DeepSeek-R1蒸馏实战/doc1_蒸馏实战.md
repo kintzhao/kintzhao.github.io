@@ -1,9 +1,9 @@
 ---
-title: DeepSeek R1 模型蒸馏实战
+title: 第1章 DS模型蒸馏实战
 source: doc1_蒸馏实战.docx
 ---
 
-# 第1章：DeepSeek R1 模型蒸馏实战
+# 第1章 DS模型蒸馏实战
 
 本章提供端到端的蒸馏实战操作指南，涵盖完整代码示例与实验配置。
 
