@@ -22,6 +22,7 @@ title: 欢迎来到我的知识库
 | 资源 | 说明 |
 |------|------|
 | [GoF设计模式与AI Agent](/static/gof-agent-patterns.html) | 23种经典设计模式的交互式演示 |
+| [AI Agent设计模式](/static/ai-agent-patterns.html) | AI Agent 架构模式与应用实践 |
 
 ## 🔍 快速导航
 
