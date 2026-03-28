@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Agent 设计模式</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --c1: #7c6aff; /* purple */
+    --c2: #00d4aa; /* teal */
+    --c3: #ff6b6b; /* red */
+    --c4: #ffd166; /* yellow */
+    --c5: #06d6a0; /* green */
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    padding: 40px 20px;
+    min-height: 100vh;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #fff 30%, var(--c1));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    margin-bottom: 56px;
+    letter-spacing: 0.08em;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 28px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.25s, border-color 0.25s;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at top left, var(--glow) 0%, transparent 60%);
+    opacity: 0.06;
+    pointer-events: none;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+
+  .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--accent);
+    color: #000;
+    font-weight: 500;
+    opacity: 0.85;
+  }
+
+  .card-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  /* ── Diagram canvas ── */
+  .diagram {
+    position: relative;
+    width: 100%;
+  }
+
+  svg {
+    width: 100%;
+    overflow: visible;
+  }
+
+  /* node styles */
+  .node-user { fill: #1a1a2e; stroke: var(--c4); stroke-width: 1.5; }
+  .node-agent { fill: #1a1a2e; stroke: var(--c1); stroke-width: 2; }
+  .node-tool  { fill: #1a1a2e; stroke: var(--c2); stroke-width: 1.5; }
+  .node-env   { fill: #1a1a2e; stroke: var(--c3); stroke-width: 1.5; }
+  .node-mem   { fill: #1a1a2e; stroke: var(--c5); stroke-width: 1.5; }
+  .node-plan  { fill: #1a1a2e; stroke: var(--c4); stroke-width: 1.5; }
+  .node-sub   { fill: #1a1a2e; stroke: var(--c2); stroke-width: 1.5; }
+  .node-critic{ fill: #1a1a2e; stroke: var(--c3); stroke-width: 1.5; }
+  .node-kb    { fill: #1a1a2e; stroke: var(--c5); stroke-width: 1.5; }
+
+  .lbl { font-family: 'Syne', sans-serif; font-size: 11.5px; font-weight: 600; fill: #e8e8f0; }
+  .lbl-sm { font-family: 'JetBrains Mono', monospace; font-size: 9px; fill: #9090b0; }
+  .lbl-step { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; fill: var(--c1); font-weight: 500; }
+
+  .arrow { fill: none; stroke-width: 1.8; marker-end: url(#arr); }
+  .arrow-back { fill: none; stroke-width: 1.5; marker-end: url(#arr-back); stroke-dasharray: 5 3; }
+
+  /* loop oval */
+  .loop { fill: none; stroke: var(--c1); stroke-width: 1.2; stroke-dasharray: 4 3; opacity: 0.5; }
+
+  /* badge circles */
+  .step-badge { fill: var(--c1); }
+  .step-num { font-family: 'JetBrains Mono', monospace; font-size: 8px; font-weight: 700; fill: #fff; }
+</style>
+</head>
+<body>
+
+<h1>AI Agent 设计模式</h1>
+<p class="subtitle">// ARCHITECTURE PATTERNS FOR INTELLIGENT AGENTS</p>
+
+<div class="grid">
+
+  <!-- ① ReAct -->
+  <div class="card" style="--accent: var(--c1); --glow: var(--c1);">
+    <div class="card-header">
+      <span class="tag" style="background:var(--c1);">01</span>
+      <span class="card-title">ReAct — 推理 + 行动</span>
+    </div>
+    <div class="diagram">
+      <svg viewBox="0 0 420 180">
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#7c6aff"/>
+          </marker>
+          <marker id="arr-back" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#00d4aa"/>
+          </marker>
+          <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#ffd166"/>
+          </marker>
+          <marker id="arr3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#ff6b6b"/>
+          </marker>
+          <marker id="arr4" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#06d6a0"/>
+          </marker>
+        </defs>
+
+        <!-- User -->
+        <rect x="10" y="70" width="72" height="36" rx="8" class="node-user"/>
+        <text x="46" y="91" text-anchor="middle" class="lbl" fill="#ffd166">用户</text>
+
+        <!-- Think -->
+        <rect x="120" y="20" width="72" height="36" rx="8" class="node-agent"/>
+        <text x="156" y="42" text-anchor="middle" class="lbl" fill="#b0a0ff">思考</text>
+        <text x="156" y="54" text-anchor="middle" class="lbl-sm">Reasoning</text>
+
+        <!-- Act -->
+        <rect x="230" y="20" width="72" height="36" rx="8" class="node-agent"/>
+        <text x="266" y="42" text-anchor="middle" class="lbl" fill="#b0a0ff">行动</text>
+        <text x="266" y="54" text-anchor="middle" class="lbl-sm">Action</text>
+
+        <!-- Observe -->
+        <rect x="120" y="120" width="72" height="36" rx="8" class="node-tool"/>
+        <text x="156" y="142" text-anchor="middle" class="lbl" fill="#00d4aa">观察</text>
+        <text x="156" y="154" text-anchor="middle" class="lbl-sm">Observation</text>
+
+        <!-- Tool -->
+        <rect x="330" y="70" width="72" height="36" rx="8" class="node-tool"/>
+        <text x="366" y="88" text-anchor="middle" class="lbl" fill="#00d4aa">工具</text>
+        <text x="366" y="100" text-anchor="middle" class="lbl-sm">Tools</text>
+
+        <!-- Result box -->
+        <rect x="230" y="120" width="72" height="36" rx="8" style="fill:#1a1a2e;stroke:#ffd166;stroke-width:1.5;"/>
+        <text x="266" y="142" text-anchor="middle" class="lbl" fill="#ffd166">结果</text>
+        <text x="266" y="154" text-anchor="middle" class="lbl-sm">Result</text>
+
+        <!-- Arrows -->
+        <line x1="82" y1="88" x2="118" y2="52" class="arrow" stroke="#ffd166" marker-end="url(#arr2)"/>
+        <line x1="192" y1="38" x2="228" y2="38" class="arrow" stroke="#7c6aff" marker-end="url(#arr)"/>
+        <line x1="302" y1="50" x2="332" y2="75" class="arrow" stroke="#7c6aff" marker-end="url(#arr)"/>
+        <line x1="366" y1="106" x2="300" y2="138" class="arrow" stroke="#00d4aa" marker-end="url(#arr-back)"/>
+        <line x1="230" y1="138" x2="194" y2="138" class="arrow" stroke="#00d4aa" marker-end="url(#arr-back)"/>
+        <line x1="156" y1="120" x2="156" y2="58" class="arrow" stroke="#00d4aa" marker-end="url(#arr-back)"/>
+
+        <!-- Loop label -->
+        <text x="156" y="95" text-anchor="middle" class="lbl-step">← 循环迭代 →</text>
+
+        <!-- final arrow to result -->
+        <line x1="266" y1="120" x2="266" y2="58" class="arrow" stroke="#ffd166" marker-end="url(#arr2)" stroke-dasharray="3 3"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ② Plan & Execute -->
+  <div class="card" style="--accent: var(--c4); --glow: var(--c4);">
+    <div class="card-header">
+      <span class="tag" style="background:var(--c4);">02</span>
+      <span class="card-title">Plan & Execute — 规划执行</span>
+    </div>
+    <div class="diagram">
+      <svg viewBox="0 0 420 180">
+        <!-- User -->
+        <rect x="10" y="72" width="62" height="34" rx="8" class="node-user"/>
+        <text x="41" y="93" text-anchor="middle" class="lbl" fill="#ffd166">用户</text>
+
+        <!-- Planner -->
+        <rect x="98" y="52" width="80" height="34" rx="8" class="node-plan"/>
+        <text x="138" y="70" text-anchor="middle" class="lbl" fill="#ffd166">规划器</text>
+        <text x="138" y="80" text-anchor="middle" class="lbl-sm">Planner</text>
+
+        <!-- Step list -->
+        <rect x="98" y="100" width="80" height="68" rx="8" style="fill:#1a1a2e;stroke:#6b6b8a;stroke-width:1.2;"/>
+        <text x="138" y="115" text-anchor="middle" class="lbl-sm" fill="#9090b0">步骤列表</text>
+        <text x="112" y="130" class="lbl-sm" fill="#7c6aff">▸ Step 1</text>
+        <text x="112" y="143" class="lbl-sm" fill="#7c6aff">▸ Step 2</text>
+        <text x="112" y="156" class="lbl-sm" fill="#7c6aff">▸ Step 3</text>
+
+        <!-- Executor -->
+        <rect x="218" y="52" width="80" height="34" rx="8" class="node-agent"/>
+        <text x="258" y="70" text-anchor="middle" class="lbl" fill="#b0a0ff">执行器</text>
+        <text x="258" y="80" text-anchor="middle" class="lbl-sm">Executor</text>
+
+        <!-- Tool calls -->
+        <rect x="330" y="38" width="76" height="26" rx="7" class="node-tool"/>
+        <text x="368" y="55" text-anchor="middle" class="lbl" fill="#00d4aa" font-size="10">Tool A</text>
+        <rect x="330" y="74" width="76" height="26" rx="7" class="node-tool"/>
+        <text x="368" y="91" text-anchor="middle" class="lbl" fill="#00d4aa" font-size="10">Tool B</text>
+        <rect x="330" y="110" width="76" height="26" rx="7" class="node-tool"/>
+        <text x="368" y="127" text-anchor="middle" class="lbl" fill="#00d4aa" font-size="10">Tool C</text>
+
+        <!-- Final output -->
+        <rect x="218" y="110" width="80" height="34" rx="8" style="fill:#1a1a2e;stroke:#ff6b6b;stroke-width:1.5;"/>
+        <text x="258" y="128" text-anchor="middle" class="lbl" fill="#ff6b6b">汇总</text>
+        <text x="258" y="139" text-anchor="middle" class="lbl-sm">Aggregator</text>
+
+        <!-- arrows -->
+        <line x1="72" y1="89" x2="96" y2="75" class="arrow" stroke="#ffd166" marker-end="url(#arr2)"/>
+        <line x1="138" y1="86" x2="138" y2="98" class="arrow" stroke="#ffd166" marker-end="url(#arr2)"/>
+        <line x1="178" y1="69" x2="216" y2="69" class="arrow" stroke="#7c6aff" marker-end="url(#arr)"/>
+        <line x1="298" y1="59" x2="328" y2="52" class="arrow" stroke="#00d4aa" marker-end="url(#arr-back)"/>
+        <line x1="298" y1="69" x2="328" y2="87" class="arrow" stroke="#00d4aa" marker-end="url(#arr-back)"/>
+        <line x1="298" y1="75" x2="328" y2="118" class="arrow" stroke="#00d4aa" marker-end="url(#arr-back)"/>
+        <!-- results back -->
+        <line x1="330" y1="58" x2="300" y2="118" class="arrow" stroke="#ff6b6b" stroke-dasharray="3 2" marker-end="url(#arr3)"/>
+        <line x1="330" y1="87" x2="300" y2="120" class="arrow" stroke="#ff6b6b" stroke-dasharray="3 2" marker-end="url(#arr3)"/>
+        <line x1="330" y1="118" x2="300" y2="125" class="arrow" stroke="#ff6b6b" stroke-dasharray="3 2" marker-end="url(#arr3)"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ③ Multi-Agent -->
+  <div class="card" style="--accent: var(--c2); --glow: var(--c2);">
+    <div class="card-header">
+      <span class="tag" style="background:var(--c2);">03</span>
+      <span class="card-title">Multi-Agent — 多智能体协作</span>
+    </div>
+    <div class="diagram">
+      <svg viewBox="0 0 420 200">
+        <!-- Orchestrator -->
+        <rect x="154" y="12" width="112" height="44" rx="10" style="fill:#1a1a2e;stroke:#7c6aff;stroke-width:2.5;"/>
+        <text x="210" y="32" text-anchor="middle" class="lbl" fill="#c0b0ff" font-size="12">编排者</text>
+        <text x="210" y="47" text-anchor="middle" class="lbl-sm">Orchestrator</text>
+
+        <!-- Sub-agents -->
+        <rect x="20" y="106" width="96" height="42" rx="8" class="node-sub"/>
+        <text x="68" y="123" text-anchor="middle" class="lbl" fill="#00d4aa" font-size="10">搜索 Agent</text>
+        <text x="68" y="135" text-anchor="middle" class="lbl-sm">Search</text>
+
+        <rect x="162" y="106" width="96" height="42" rx="8" class="node-sub"/>
+        <text x="210" y="123" text-anchor="middle" class="lbl" fill="#00d4aa" font-size="10">代码 Agent</text>
+        <text x="210" y="135" text-anchor="middle" class="lbl-sm">Code</text>
+
+        <rect x="304" y="106" width="96" height="42" rx="8" class="node-sub"/>
+        <text x="352" y="123" text-anchor="middle" class="lbl" fill="#00d4aa" font-size="10">分析 Agent</text>
+        <text x="352" y="135" text-anchor="middle" class="lbl-sm">Analysis</text>
+
+        <!-- Results -->
+        <rect x="154" y="166" width="112" height="34" rx="8" style="fill:#1a1a2e;stroke:#ffd166;stroke-width:1.5;"/>
+        <text x="210" y="184" text-anchor="middle" class="lbl" fill="#ffd166">汇总结果</text>
+        <text x="210" y="194" text-anchor="middle" class="lbl-sm">Final Result</text>
+
+        <!-- arrows down from orchestrator -->
+        <line x1="188" y1="56" x2="100" y2="104" class="arrow" stroke="#7c6aff" marker-end="url(#arr)"/>
+        <line x1="210" y1="56" x2="210" y2="104" class="arrow" stroke="#7c6aff" marker-end="url(#arr)"/>
+        <line x1="232" y1="56" x2="320" y2="104" class="arrow" stroke="#7c6aff" marker-end="url(#arr)"/>
+
+        <!-- arrows up from sub-agents -->
+        <line x1="88" y1="148" x2="170" y2="164" class="arrow" stroke="#00d4aa" stroke-dasharray="4 2" marker-end="url(#arr-back)"/>
+        <line x1="210" y1="148" x2="210" y2="164" class="arrow" stroke="#00d4aa" stroke-dasharray="4 2" marker-end="url(#arr-back)"/>
+        <line x1="332" y1="148" x2="250" y2="164" class="arrow" stroke="#00d4aa" stroke-dasharray="4 2" marker-end="url(#arr-back)"/>
+
+        <!-- horizontal shared context -->
+        <line x1="116" y1="127" x2="160" y2="127" class="arrow" stroke="#4a4a6a" stroke-dasharray="3 3" marker-end="url(#arr)"/>
+        <line x1="258" y1="127" x2="302" y2="127" class="arrow" stroke="#4a4a6a" stroke-dasharray="3 3" marker-end="url(#arr)"/>
+        <text x="210" y="100" text-anchor="middle" class="lbl-sm" fill="#4a4a6a">共享上下文</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ④ Reflection -->
+  <div class="card" style="--accent: var(--c3); --glow: var(--c3);">
+    <div class="card-header">
+      <span class="tag" style="background:var(--c3);">04</span>
+      <span class="card-title">Reflection — 自我反思</span>
+    </div>
+    <div class="diagram">
+      <svg viewBox="0 0 420 190">
+        <!-- Input -->
+        <rect x="10" y="78" width="64" height="34" rx="8" class="node-user"/>
+        <text x="42" y="99" text-anchor="middle" class="lbl" fill="#ffd166">输入</text>
+
+        <!-- Generator -->
+        <rect x="110" y="78" width="80" height="34" rx="8" class="node-agent"/>
+        <text x="150" y="96" text-anchor="middle" class="lbl" fill="#b0a0ff">生成器</text>
+        <text x="150" y="107" text-anchor="middle" class="lbl-sm">Generator</text>
+
+        <!-- Draft -->
+        <rect x="230" y="52" width="76" height="34" rx="8" style="fill:#1a1a2e;stroke:#6b6b8a;stroke-width:1.2;"/>
+        <text x="268" y="70" text-anchor="middle" class="lbl" fill="#aaa">草稿</text>
+        <text x="268" y="81" text-anchor="middle" class="lbl-sm">Draft</text>
+
+        <!-- Critic -->
+        <rect x="330" y="78" width="76" height="34" rx="8" class="node-critic"/>
+        <text x="368" y="96" text-anchor="middle" class="lbl" fill="#ff9090">评估器</text>
+        <text x="368" y="107" text-anchor="middle" class="lbl-sm">Critic</text>
+
+        <!-- Feedback -->
+        <rect x="230" y="104" width="76" height="34" rx="8" style="fill:#1a1a2e;stroke:#ff6b6b;stroke-width:1.2;"/>
+        <text x="268" y="122" text-anchor="middle" class="lbl" fill="#ff9090">反馈</text>
+        <text x="268" y="133" text-anchor="middle" class="lbl-sm">Feedback</text>
+
+        <!-- Final output -->
+        <rect x="110" y="140" width="80" height="34" rx="8" style="fill:#1a1a2e;stroke:#06d6a0;stroke-width:1.8;"/>
+        <text x="150" y="158" text-anchor="middle" class="lbl" fill="#06d6a0">最终输出</text>
+        <text x="150" y="169" text-anchor="middle" class="lbl-sm">Final Output</text>
+
+        <!-- Quality gate -->
+        <circle cx="150" cy="125" r="14" style="fill:#1a1a2e;stroke:#ffd166;stroke-width:1.5;"/>
+        <text x="150" y="129" text-anchor="middle" class="lbl-sm" fill="#ffd166">OK?</text>
+
+        <!-- arrows -->
+        <line x1="74" y1="95" x2="108" y2="95" class="arrow" stroke="#ffd166" marker-end="url(#arr2)"/>
+        <line x1="190" y1="88" x2="228" y2="68" class="arrow" stroke="#7c6aff" marker-end="url(#arr)"/>
+        <line x1="306" y1="68" x2="328" y2="84" class="arrow" stroke="#7c6aff" marker-end="url(#arr)"/>
+        <line x1="368" y1="112" x2="308" y2="118" class="arrow" stroke="#ff6b6b" marker-end="url(#arr3)"/>
+        <line x1="230" y1="121" x2="166" y2="121" class="arrow" stroke="#ff6b6b" marker-end="url(#arr3)"/>
+
+        <!-- loop back arrow -->
+        <path d="M 136 121 Q 100 121 100 95 Q 100 70 108 80" fill="none" stroke="#ff6b6b" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#arr3)"/>
+        <text x="82" y="102" class="lbl-sm" fill="#ff6b6b" font-size="8">修正</text>
+
+        <!-- pass arrow -->
+        <line x1="150" y1="139" x2="150" y2="142" class="arrow" stroke="#06d6a0" marker-end="url(#arr4)"/>
+        <text x="165" y="133" class="lbl-sm" fill="#06d6a0">通过 ✓</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ⑤ RAG-Agent -->
+  <div class="card" style="--accent: var(--c5); --glow: var(--c5); grid-column: 1 / -1;">
+    <div class="card-header">
+      <span class="tag" style="background:var(--c5);">05</span>
+      <span class="card-title">RAG-Agent — 检索增强智能体</span>
+    </div>
+    <div class="diagram">
+      <svg viewBox="0 0 780 170">
+        <!-- User query -->
+        <rect x="10" y="68" width="74" height="34" rx="8" class="node-user"/>
+        <text x="47" y="89" text-anchor="middle" class="lbl" fill="#ffd166">用户查询</text>
+
+        <!-- Query Router -->
+        <rect x="116" y="68" width="80" height="34" rx="8" class="node-plan"/>
+        <text x="156" y="86" text-anchor="middle" class="lbl" fill="#ffd166">路由器</text>
+        <text x="156" y="97" text-anchor="middle" class="lbl-sm">Query Router</text>
+
+        <!-- Vector DB -->
+        <rect x="240" y="20" width="90" height="34" rx="8" class="node-kb"/>
+        <text x="285" y="38" text-anchor="middle" class="lbl" fill="#06d6a0">向量数据库</text>
+        <text x="285" y="49" text-anchor="middle" class="lbl-sm">Vector DB</text>
+
+        <!-- Web Search -->
+        <rect x="240" y="68" width="90" height="34" rx="8" class="node-tool"/>
+        <text x="285" y="86" text-anchor="middle" class="lbl" fill="#00d4aa">网络搜索</text>
+        <text x="285" y="97" text-anchor="middle" class="lbl-sm">Web Search</text>
+
+        <!-- API Tools -->
+        <rect x="240" y="116" width="90" height="34" rx="8" class="node-tool"/>
+        <text x="285" y="134" text-anchor="middle" class="lbl" fill="#00d4aa">API 工具</text>
+        <text x="285" y="145" text-anchor="middle" class="lbl-sm">API Tools</text>
+
+        <!-- Context Assembler -->
+        <rect x="374" y="68" width="100" height="34" rx="8" style="fill:#1a1a2e;stroke:#7c6aff;stroke-width:1.8;"/>
+        <text x="424" y="86" text-anchor="middle" class="lbl" fill="#c0b0ff">上下文组装</text>
+        <text x="424" y="97" text-anchor="middle" class="lbl-sm">Context Builder</text>
+
+        <!-- LLM Reasoning -->
+        <rect x="514" y="54" width="100" height="62" rx="10" style="fill:#1a1a2e;stroke:#7c6aff;stroke-width:2.5;"/>
+        <text x="564" y="78" text-anchor="middle" class="lbl" fill="#c0b0ff">LLM</text>
+        <text x="564" y="92" text-anchor="middle" class="lbl" fill="#c0b0ff">推理</text>
+        <text x="564" y="107" text-anchor="middle" class="lbl-sm">Reasoning</text>
+
+        <!-- Output -->
+        <rect x="658" y="68" width="108" height="34" rx="8" style="fill:#1a1a2e;stroke:#06d6a0;stroke-width:2;"/>
+        <text x="712" y="89" text-anchor="middle" class="lbl" fill="#06d6a0">增强回答</text>
+
+        <!-- Arrows -->
+        <line x1="84" y1="85" x2="114" y2="85" class="arrow" stroke="#ffd166" marker-end="url(#arr2)"/>
+        <line x1="188" y1="78" x2="238" y2="40" class="arrow" stroke="#ffd166" marker-end="url(#arr2)"/>
+        <line x1="188" y1="85" x2="238" y2="85" class="arrow" stroke="#ffd166" marker-end="url(#arr2)"/>
+        <line x1="188" y1="92" x2="238" y2="130" class="arrow" stroke="#ffd166" marker-end="url(#arr2)"/>
+
+        <line x1="330" y1="40" x2="372" y2="76" class="arrow" stroke="#06d6a0" marker-end="url(#arr4)"/>
+        <line x1="330" y1="85" x2="372" y2="85" class="arrow" stroke="#00d4aa" marker-end="url(#arr-back)"/>
+        <line x1="330" y1="130" x2="372" y2="94" class="arrow" stroke="#00d4aa" marker-end="url(#arr-back)"/>
+
+        <line x1="474" y1="85" x2="512" y2="85" class="arrow" stroke="#7c6aff" marker-end="url(#arr)"/>
+        <line x1="614" y1="85" x2="656" y2="85" class="arrow" stroke="#06d6a0" marker-end="url(#arr4)"/>
+
+        <!-- Re-query loop -->
+        <path d="M 564 116 Q 564 155 424 155 Q 284 155 285 152" fill="none" stroke="#7c6aff" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arr)"/>
+        <text x="424" y="150" text-anchor="middle" class="lbl-sm" fill="#7c6aff">不足时重新检索</text>
+      </svg>
+    </div>
+  </div>
+
+</div>
+
+<p style="text-align:center;color:#3a3a5a;font-family:'JetBrains Mono',monospace;font-size:0.7rem;margin-top:48px;letter-spacing:0.05em;">// AI AGENT DESIGN PATTERNS · ANTHROPIC CLAUDE</p>
+
+</body>
+</html>
