@@ -15,3 +15,7 @@ title: 大模型技术
 ### DeepSeek R1 蒸馏实战
 
 [[DeepSeek-R1蒸馏实战/index|DeepSeek R1 从零训练模型数据-模型蒸馏技术实战]] — DeepSeek R1 模型蒸馏技术原理与实战指南。
+
+### 设计模式与 AI Agent
+
+[[GoF设计模式与AI-Agent|23种GoF设计模式与AI Agent]] — 经典设计模式在现代 AI Agent 开发中的应用与实践。
