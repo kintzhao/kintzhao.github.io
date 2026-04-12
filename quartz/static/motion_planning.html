@@ -453,12 +453,27 @@
   .copy-btn:hover { color:var(--accent); border-color:var(--accent); }
 
   .code-content {
-    max-height:600px;
-    overflow:hidden;
+    max-height:800px;
+    overflow-y:auto;
+    overflow-x:hidden;
     transition:max-height 0.3s ease;
   }
   .code-box.collapsed .code-content {
     max-height:0;
+    overflow:hidden;
+  }
+  .code-content::-webkit-scrollbar {
+    width:6px;
+  }
+  .code-content::-webkit-scrollbar-track {
+    background:var(--surface);
+  }
+  .code-content::-webkit-scrollbar-thumb {
+    background:var(--border);
+    border-radius:3px;
+  }
+  .code-content::-webkit-scrollbar-thumb:hover {
+    background:var(--text3);
   }
 
   pre {
