@@ -48,6 +48,8 @@ npm install
 npx quartz build --serve
 
 # 默认访问 http://localhost:8080
+
+npx quartz build --serve --port 9000
 ```
 
 ### 构建静态文件
